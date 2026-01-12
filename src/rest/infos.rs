@@ -1,5 +1,6 @@
 use crate::config::Config;
 use crate::search::{Order, Sort, search};
+use crate::utils::get_remaining_downloads;
 use crate::{DOMAIN, resolver};
 use actix_web::{HttpResponse, get, web};
 use std::net::SocketAddr;
@@ -112,6 +113,14 @@ pub async fn status_check(data: web::Data<Client>, config: web::Data<Config>) ->
         false => "disabled",
     };
 
+    let remain = match get_remaining_downloads(&data).await {
+        Ok(n) => n as i32,
+        Err(e) => {
+            error!("Failed to get remaining downloads: {}", e);
+            -1
+        }
+    };
+
     let status = serde_json::json!({
         "domain": domain,
         "auth": auth,
@@ -121,6 +130,7 @@ pub async fn status_check(data: web::Data<Client>, config: web::Data<Config>) ->
         "domain_dns": dns_lookup,
         "parsing": parsing,
         "tmdb_integration": tmdb,
+        "remaining_downloads": remain,
     });
 
     HttpResponse::Ok().json(status)

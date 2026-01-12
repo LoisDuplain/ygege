@@ -2,6 +2,7 @@ use crate::rest::bench::*;
 use crate::rest::categories::*;
 use crate::rest::homepage::*;
 use crate::rest::infos::*;
+use crate::rest::remain::*;
 use crate::rest::search::*;
 use crate::rest::torrent::*;
 use crate::rest::user::*;
@@ -11,6 +12,7 @@ mod bench;
 mod categories;
 mod homepage;
 mod infos;
+mod remain;
 pub(crate) mod search;
 mod torrent;
 mod user;
@@ -23,5 +25,6 @@ pub fn config_routes(cfg: &mut web::ServiceConfig) {
         .service(health_check)
         .service(status_check)
         .service(index)
+        .service(remaining_downloads_status)
         .service(bench_mark);
 }
