@@ -1,20 +1,28 @@
 use crate::categories::CATEGORIES_CACHE;
-use actix_web::{HttpResponse, get, web};
-use wreq::Client;
+use crate::rest::client_extractor::MaybeCustomClient;
+use actix_web::{HttpResponse, get};
 
 #[get("/categories")]
-pub async fn categories(data: web::Data<Client>) -> HttpResponse {
+pub async fn categories(data: MaybeCustomClient) -> HttpResponse {
     // Try to get from cache first
     if let Some(cached_categories) = CATEGORIES_CACHE.get() {
-        return HttpResponse::Ok().json(cached_categories);
+        let mut response = HttpResponse::Ok();
+        if let Some(cookies) = data.cookies_header {
+            response.insert_header(("X-Session-Cookies", cookies));
+        }
+        return response.json(cached_categories);
     }
 
     // If cache is empty (shouldn't happen after startup), scrape now
     warn!("Categories cache was empty, scraping now...");
-    match crate::categories::scrape_categories(&data).await {
+    match crate::categories::scrape_categories(&data.client).await {
         Ok(categories) => {
             let _ = CATEGORIES_CACHE.set(categories.clone());
-            HttpResponse::Ok().json(categories)
+            let mut response = HttpResponse::Ok();
+            if let Some(cookies) = data.cookies_header {
+                response.insert_header(("X-Session-Cookies", cookies));
+            }
+            response.json(categories)
         }
         Err(e) => {
             error!("Failed to fetch categories: {}", e);

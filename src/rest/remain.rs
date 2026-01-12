@@ -1,11 +1,11 @@
-use actix_web::{HttpResponse, get, web};
+use actix_web::{HttpResponse, get};
 
+use crate::rest::client_extractor::MaybeCustomClient;
 use crate::utils::get_remaining_downloads;
-use wreq::Client;
 
 #[get("/remain")]
-pub async fn remaining_downloads_status(data: web::Data<Client>) -> HttpResponse {
-    let remain = match get_remaining_downloads(&data).await {
+pub async fn remaining_downloads_status(client: MaybeCustomClient) -> HttpResponse {
+    let remain = match get_remaining_downloads(&client.client).await {
         Ok(n) => n as i32,
         Err(e) => {
             error!("Failed to get remaining downloads: {}", e);
@@ -13,5 +13,9 @@ pub async fn remaining_downloads_status(data: web::Data<Client>) -> HttpResponse
         }
     };
 
-    HttpResponse::Ok().body(remain.to_string())
+    let mut response = HttpResponse::Ok();
+    if let Some(cookies) = client.cookies_header {
+        response.insert_header(("X-Session-Cookies", cookies));
+    }
+    response.body(remain.to_string())
 }

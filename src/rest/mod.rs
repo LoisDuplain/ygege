@@ -10,10 +10,11 @@ use actix_web::web;
 
 mod bench;
 mod categories;
+pub mod client_extractor;
 mod homepage;
 mod infos;
 mod remain;
-pub(crate) mod search;
+pub mod search;
 mod torrent;
 mod user;
 

@@ -1,13 +1,13 @@
 use crate::DOMAIN;
 use crate::config::Config;
+use crate::rest::client_extractor::MaybeCustomClient;
 use actix_web::{HttpRequest, HttpResponse, get, web};
 use serde_json::Value;
 use tokio::time::{Duration, sleep};
-use wreq::Client;
 
 #[get("/torrent/{id:[0-9]+}")]
 pub async fn download_torrent(
-    data: web::Data<Client>,
+    data: MaybeCustomClient,
     config: web::Data<Config>,
     req_data: HttpRequest,
 ) -> Result<HttpResponse, Box<dyn std::error::Error>> {
@@ -26,6 +26,7 @@ pub async fn download_torrent(
     debug!("Request download token {} {}", url, body);
 
     let response = data
+        .client
         .post(&url)
         .body(body)
         .header(
@@ -60,7 +61,7 @@ pub async fn download_torrent(
     );
     debug!("download URL {}", url);
 
-    let response = data.get(&url).send().await?;
+    let response = data.client.get(&url).send().await?;
 
     if !response.status().is_success() {
         if response.status() == 302 {
@@ -76,11 +77,17 @@ pub async fn download_torrent(
 
     let body = response.bytes().await?;
 
-    Ok(HttpResponse::Ok()
+    let mut response_builder = HttpResponse::Ok();
+    response_builder
         .content_type("application/x-bittorrent")
         .append_header((
             "Content-Disposition",
             format!("attachment; filename=\"{}.torrent\"", id),
-        ))
-        .body(body))
+        ));
+
+    if let Some(cookies) = data.cookies_header {
+        response_builder.insert_header(("X-Session-Cookies", cookies));
+    }
+
+    Ok(response_builder.body(body))
 }

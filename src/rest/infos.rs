@@ -1,4 +1,5 @@
 use crate::config::Config;
+use crate::rest::client_extractor::MaybeCustomClient;
 use crate::search::{Order, Sort, search};
 use crate::utils::get_remaining_downloads;
 use crate::{DOMAIN, resolver};
@@ -8,7 +9,6 @@ use std::str::FromStr;
 use std::time::Duration;
 use tokio::net::TcpStream;
 use tokio::time::timeout;
-use wreq::Client;
 use wreq::dns::Resolve;
 
 #[get("/health")]
@@ -17,14 +17,14 @@ pub async fn health_check() -> HttpResponse {
 }
 
 #[get("/status")]
-pub async fn status_check(data: web::Data<Client>, config: web::Data<Config>) -> HttpResponse {
+pub async fn status_check(data: MaybeCustomClient, config: web::Data<Config>) -> HttpResponse {
     let domain_lock = DOMAIN.lock().unwrap();
     let cloned_guard = domain_lock.clone();
     let domain = cloned_guard.as_str();
     drop(domain_lock);
 
     let search = search(
-        &data,
+        &data.client,
         Some("Vaiana"),
         None,
         None,
@@ -62,7 +62,7 @@ pub async fn status_check(data: web::Data<Client>, config: web::Data<Config>) ->
         }
     }
 
-    let user = crate::user::get_account(&data).await;
+    let user = crate::user::get_account(&data.client).await;
     let user_status = match user.is_ok() {
         true => "ok",
         false => "failed",
@@ -113,7 +113,7 @@ pub async fn status_check(data: web::Data<Client>, config: web::Data<Config>) ->
         false => "disabled",
     };
 
-    let remain = match get_remaining_downloads(&data).await {
+    let remain = match get_remaining_downloads(&data.client).await {
         Ok(n) => n as i32,
         Err(e) => {
             error!("Failed to get remaining downloads: {}", e);
@@ -133,5 +133,9 @@ pub async fn status_check(data: web::Data<Client>, config: web::Data<Config>) ->
         "remaining_downloads": remain,
     });
 
-    HttpResponse::Ok().json(status)
+    let mut response = HttpResponse::Ok();
+    if let Some(cookies) = data.cookies_header {
+        response.insert_header(("X-Session-Cookies", cookies));
+    }
+    response.json(status)
 }

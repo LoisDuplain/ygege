@@ -1,8 +1,9 @@
 use crate::config::Config;
 use crate::dbs::DbQueryType::*;
 use crate::parser::Torrent;
+use crate::rest::client_extractor::MaybeCustomClient;
 use crate::search::{Order, Sort, search};
-use actix_web::{HttpRequest, get, web};
+use actix_web::{HttpRequest, HttpResponse, get, web};
 use futures::future::join_all;
 use qstring::QString;
 use serde_json::Value;
@@ -224,10 +225,10 @@ async fn batch_category_search(
 
 #[get("/search")]
 pub async fn ygg_search(
-    data: web::Data<Client>,
+    data: MaybeCustomClient,
     config: web::Data<Config>,
     req_data: HttpRequest,
-) -> Result<web::Json<Vec<Value>>, Box<dyn std::error::Error>> {
+) -> Result<HttpResponse, Box<dyn std::error::Error>> {
     let query = req_data.query_string();
     debug!("Received query: {}", query);
     let qs = QString::from(query);
@@ -297,7 +298,7 @@ pub async fn ygg_search(
                         id
                     );
                     let results = batch_best_search(
-                        &data,
+                        &data.client,
                         queries,
                         offset,
                         category,
@@ -313,27 +314,47 @@ pub async fn ygg_search(
                         info!("{} torrents found via {} search", results.len(), db_name);
                         let torrent_json: Vec<Value> =
                             results.into_iter().map(|t| t.to_json()).collect();
-                        return Ok(web::Json(torrent_json));
+                        let mut response = HttpResponse::Ok();
+                        if let Some(cookies) = data.cookies_header {
+                            response.insert_header(("X-Session-Cookies", cookies));
+                        }
+                        return Ok(response.json(torrent_json));
                     }
                     debug!(
                         "{} search returned no results, falling back to regular search",
                         db_name
                     );
-                    Ok(web::Json(vec![]))
+                    let mut response = HttpResponse::Ok();
+                    if let Some(cookies) = data.cookies_header {
+                        response.insert_header(("X-Session-Cookies", cookies));
+                    }
+                    Ok(response.json(Vec::<Value>::new()))
                 }
                 Err(e) => {
                     warn!("Failed to get {} queries for ID {}: {}", db_name, id, e);
-                    Ok(web::Json(vec![]))
+                    let mut response = HttpResponse::Ok();
+                    if let Some(cookies) = data.cookies_header {
+                        response.insert_header(("X-Session-Cookies", cookies));
+                    }
+                    Ok(response.json(Vec::<Value>::new()))
                 }
             }
         } else {
             warn!("No valid database ID provided for DB search");
-            Ok(web::Json(vec![]))
+            let mut response = HttpResponse::Ok();
+            if let Some(cookies) = data.cookies_header {
+                response.insert_header(("X-Session-Cookies", cookies));
+            }
+            Ok(response.json(Vec::<Value>::new()))
         };
     } else {
         if qs.get("tmdbid").is_some() || qs.get("imdbid").is_some() {
             warn!("Database ID provided but no TMDB token configured, skipping database search");
-            return Ok(web::Json(vec![]));
+            let mut response = HttpResponse::Ok();
+            if let Some(cookies) = data.cookies_header {
+                response.insert_header(("X-Session-Cookies", cookies));
+            }
+            return Ok(response.json(Vec::<Value>::new()));
         }
     }
 
@@ -359,7 +380,7 @@ pub async fn ygg_search(
         );
 
         let results = batch_category_search(
-            &data,
+            &data.client,
             name,
             offset,
             cats,
@@ -373,11 +394,15 @@ pub async fn ygg_search(
 
         info!("{} torrents found via bulk category search", results.len());
         let torrent_json: Vec<Value> = results.into_iter().map(|t| t.to_json()).collect();
-        return Ok(web::Json(torrent_json));
+        let mut response = HttpResponse::Ok();
+        if let Some(cookies) = data.cookies_header {
+            response.insert_header(("X-Session-Cookies", cookies));
+        }
+        return Ok(response.json(torrent_json));
     }
 
     let torrents = search(
-        &data,
+        &data.client,
         name,
         offset,
         category,
@@ -390,22 +415,48 @@ pub async fn ygg_search(
 
     match torrents {
         Ok(torrents) => {
-            let mut json = vec![];
-            for torrent in torrents {
-                json.push(torrent.to_json());
-            }
-
+            let json: Vec<Value> = torrents.into_iter().map(|t| t.to_json()).collect();
             info!("{} torrents found", json.len());
-            Ok(web::Json(json))
+            let mut response = HttpResponse::Ok();
+            if let Some(cookies) = data.cookies_header {
+                response.insert_header(("X-Session-Cookies", cookies));
+            }
+            Ok(response.json(json))
         }
         Err(e) => {
-            // if session expired
-            if e.to_string().contains("Session expired") {
+            // If session expired and NOT using custom cookies, try to renew
+            if e.to_string().contains("Session expired") && !data.is_custom {
                 info!("Trying to renew session...");
                 let new_client =
                     crate::auth::login(config.username.as_str(), config.password.as_str(), true)
                         .await?;
-                data.get_ref().clone_from(&&new_client);
+
+                // Copy cookies from new client to shared client
+                let domain = crate::DOMAIN.lock()?;
+                let url = wreq::Url::parse(&format!("https://{}/", domain))?;
+                if let Some(cookies) = new_client.get_cookies(&url) {
+                    data.shared_client.clear_cookies();
+                    for cookie_str in cookies.to_str().unwrap_or("").split(';') {
+                        let cookie_str = cookie_str.trim();
+                        if cookie_str.is_empty() {
+                            continue;
+                        }
+                        let parts: Vec<&str> = cookie_str.splitn(2, '=').collect();
+                        if parts.len() != 2 {
+                            continue;
+                        }
+                        let cookie =
+                            wreq::cookie::CookieBuilder::new(parts[0].trim(), parts[1].trim())
+                                .domain(domain.as_str())
+                                .path("/")
+                                .http_only(true)
+                                .secure(true)
+                                .build();
+                        data.shared_client.set_cookie(&url, cookie);
+                    }
+                }
+                drop(domain);
+
                 info!("Session renewed, retrying search...");
                 let torrents = search(
                     &new_client,
@@ -418,12 +469,13 @@ pub async fn ygg_search(
                     ban_words,
                 )
                 .await?;
-                let mut json = vec![];
-                for torrent in torrents {
-                    json.push(torrent.to_json());
-                }
+                let json: Vec<Value> = torrents.into_iter().map(|t| t.to_json()).collect();
                 info!("{} torrents found", json.len());
-                Ok(web::Json(json))
+                let mut response = HttpResponse::Ok();
+                if let Some(cookies) = data.cookies_header {
+                    response.insert_header(("X-Session-Cookies", cookies));
+                }
+                Ok(response.json(json))
             } else {
                 error!("Search error: {}", e);
                 Err(e)

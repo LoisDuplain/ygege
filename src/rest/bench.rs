@@ -1,15 +1,15 @@
 use crate::auth::login;
 use crate::config::Config;
 use crate::domain::get_ygg_domain;
+use crate::rest::client_extractor::MaybeCustomClient;
 use crate::search::{Order, Sort, search};
 use actix_web::{HttpRequest, HttpResponse, get, web};
 use qstring::QString;
 use sysinfo::{Pid, System};
-use wreq::Client;
 
 #[get("/bench")]
 pub async fn bench_mark(
-    data: web::Data<Client>,
+    data: MaybeCustomClient,
     config: web::Data<Config>,
     req_data: HttpRequest,
 ) -> HttpResponse {
@@ -60,7 +60,7 @@ pub async fn bench_mark(
 
             let start = chrono::Utc::now();
             let _search = search(
-                &data,
+                &data.client,
                 Some("Vaiana"),
                 None,
                 None,
@@ -164,11 +164,15 @@ pub async fn bench_mark(
         }
     };
 
-    HttpResponse::Ok()
-        .content_type("text/csv")
-        .append_header((
-            "Content-Disposition",
-            "attachment; filename=\"benchmark.csv\"",
-        ))
-        .streaming(stream)
+    let mut response_builder = HttpResponse::Ok();
+    response_builder.content_type("text/csv").append_header((
+        "Content-Disposition",
+        "attachment; filename=\"benchmark.csv\"",
+    ));
+
+    if let Some(cookies) = data.cookies_header {
+        response_builder.insert_header(("X-Session-Cookies", cookies));
+    }
+
+    response_builder.streaming(stream)
 }
