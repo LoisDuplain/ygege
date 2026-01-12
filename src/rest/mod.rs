@@ -1,3 +1,4 @@
+use crate::rest::auth::*;
 use crate::rest::bench::*;
 use crate::rest::categories::*;
 use crate::rest::homepage::*;
@@ -8,6 +9,7 @@ use crate::rest::torrent::*;
 use crate::rest::user::*;
 use actix_web::web;
 
+mod auth;
 mod bench;
 mod categories;
 pub mod client_extractor;
@@ -27,5 +29,6 @@ pub fn config_routes(cfg: &mut web::ServiceConfig) {
         .service(status_check)
         .service(index)
         .service(remaining_downloads_status)
+        .service(auth)
         .service(bench_mark);
 }
