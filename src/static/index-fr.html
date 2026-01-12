@@ -65,6 +65,9 @@
             } else if (data.remaining_downloads < 5) {
                 remainingDownloads = data.remaining_downloads;
                 remainingDownloadsColor = warningColor;
+            } else if (data.remaining_downloads >= 65535) {
+                remainingDownloads = "Illimité";
+                remainingDownloadsColor = validColor;
             } else {
                 remainingDownloads = data.remaining_downloads;
                 remainingDownloadsColor = validColor;

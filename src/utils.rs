@@ -29,22 +29,22 @@ pub async fn get_remaining_downloads(
         domain_lock.clone()
     };
 
-    // https://www.yggtorrent.org/torrent/application/windows/316475-microsoft-toolkit-v2-6-4-activateur-office-2016---2019-windows-10
     let url = format!(
         "https://{}//torrent/application/windows/316475-microsoft-toolkit-v2-6-4-activateur-office-2016---2019-windows-10",
         domain
     );
     let response = client.get(&url).send().await?;
-    /*<small style="color: #888;">Téléchargements restants aujourd'hui : <strong>5/5</strong></small>*/
     let document = scraper::Html::parse_document(&response.text().await?);
-    // small and color #888
+
     let selector = scraper::Selector::parse("small[style=\"color: #888;\"]")
         .map_err(|_| "Invalid CSS selector")?;
-    let small = document
-        .select(&selector)
-        .next()
-        .ok_or("Remaining downloads info not found")?;
-    // get the strong text
+    let small = document.select(&selector).next();
+
+    let small = match small {
+        Some(s) => s,
+        None => return Ok(u16::MAX),
+    };
+
     let strong_selector = scraper::Selector::parse("strong").map_err(|_| "Invalid CSS selector")?;
     let strong = small
         .select(&strong_selector)
