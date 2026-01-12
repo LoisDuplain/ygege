@@ -1,7 +1,6 @@
 use crate::DOMAIN;
 use crate::config::Config;
 use actix_web::{HttpRequest, HttpResponse, get, web};
-use rs_torrent_magnet;
 use serde_json::Value;
 use tokio::time::{Duration, sleep};
 use wreq::Client;
@@ -77,13 +76,11 @@ pub async fn download_torrent(
 
     let body = response.bytes().await?;
 
-    // Convert torrent to magnet
-    let magnet_link = rs_torrent_magnet::magnet_from_torrent(body.to_vec())
-        .map_err(|e| format!("Failed to convert torrent to magnet: {:?}", e))?;
-
-    debug!("Magnet link: {}", magnet_link);
-
-    Ok(HttpResponse::Found()
-        .append_header(("Location", magnet_link))
-        .finish())
+    Ok(HttpResponse::Ok()
+        .content_type("application/x-bittorrent")
+        .append_header((
+            "Content-Disposition",
+            format!("attachment; filename=\"{}.torrent\"", id),
+        ))
+        .body(body))
 }
