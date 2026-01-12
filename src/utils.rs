@@ -34,6 +34,11 @@ pub async fn get_remaining_downloads(
         domain
     );
     let response = client.get(&url).send().await?;
+
+    if check_session_expired(&response) {
+        return Err("Session expired".into());
+    }
+
     let document = scraper::Html::parse_document(&response.text().await?);
 
     let selector = scraper::Selector::parse("small[style=\"color: #888;\"]")
