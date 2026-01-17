@@ -25,7 +25,7 @@ pub async fn status_check(data: MaybeCustomClient, config: web::Data<Config>) ->
 
     let search = search(
         &data.client,
-        Some("Vaiana"),
+        "Vaiana",
         None,
         None,
         None,

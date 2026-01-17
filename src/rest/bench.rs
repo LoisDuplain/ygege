@@ -61,7 +61,7 @@ pub async fn bench_mark(
             let start = chrono::Utc::now();
             let _search = search(
                 &data.client,
-                Some("Vaiana"),
+                "Vaiana",
                 None,
                 None,
                 None,

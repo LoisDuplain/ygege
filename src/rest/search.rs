@@ -33,7 +33,7 @@ async fn batch_best_search(
         .map(|query| {
             search(
                 client,
-                Some(query.as_str()),
+                query.as_str(),
                 offset,
                 category,
                 sub_category,
@@ -141,7 +141,7 @@ async fn batch_best_search(
 
 async fn batch_category_search(
     client: &Client,
-    name: Option<&str>,
+    name: &str,
     offset: Option<usize>,
     cats_list: Vec<usize>,
     sub_category: Option<usize>,
@@ -238,7 +238,7 @@ pub async fn ygg_search(
     let query = req_data.query_string();
     debug!("Received query: {}", query);
     let qs = QString::from(query);
-    let mut name = qs.get("name");
+    let name = qs.get("name").or(qs.get("q")).unwrap_or("");
     let offset = qs.get("offset").and_then(|s| s.parse::<usize>().ok());
     let category = qs.get("category").and_then(|s| s.parse::<usize>().ok());
     let sub_category = qs.get("sub_category").and_then(|s| s.parse::<usize>().ok());
@@ -366,12 +366,8 @@ pub async fn ygg_search(
         }
     }
 
-    if name.is_none() {
-        name = qs.get("q");
-    }
-
     // Prowlarr RSS feed compatibility trick
-    if name.is_none() {
+    if name.is_empty() {
         if connarr.is_some() {
             order = Some(Order::Descending);
             sort = Some(Sort::PublishDate);
