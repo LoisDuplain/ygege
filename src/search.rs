@@ -5,6 +5,7 @@ use crate::utils::check_session_expired;
 use crate::{DOMAIN, parser};
 use std::str::FromStr;
 use std::sync::OnceLock;
+use urlencoding::{decode, encode};
 
 static RATE_LIMITER: OnceLock<RateLimiter> = OnceLock::new();
 
@@ -24,12 +25,15 @@ pub async fn search(
     quote_search: bool,
 ) -> Result<Vec<Torrent>, Box<dyn std::error::Error>> {
     let name = match quote_search {
-        true if !name.is_empty() => name
-            .replace("%20", " ")
-            .split(|c| c == '+' || c == ' ')
-            .map(|w| format!("\"{}\"", w))
-            .collect::<Vec<_>>()
-            .join(" "),
+        true if !name.is_empty() => {
+            let decoded = decode(name).unwrap_or(std::borrow::Cow::Borrowed(name));
+            decoded
+                .split(|c| c == '+' || c == ' ')
+                .filter(|w| !w.is_empty())
+                .map(|w| format!("\"{}\"", w))
+                .collect::<Vec<_>>()
+                .join(" ")
+        }
         _ => name.to_owned(),
     };
     debug!(
@@ -149,7 +153,7 @@ fn build_query_url(
     let domain = cloned_guard.as_str();
     drop(domain_lock);
 
-    let mut url = format!("https://{domain}/engine/search?name={name}");
+    let mut url = format!("https://{domain}/engine/search?name={}", encode(&name));
     if let Some(offset) = offset {
         url.push_str(&format!("&page={offset}"));
     }
