@@ -5,6 +5,7 @@ use crate::utils::check_session_expired;
 use crate::{DOMAIN, parser};
 use std::str::FromStr;
 use std::sync::OnceLock;
+use urlencoding::{decode, encode};
 
 static RATE_LIMITER: OnceLock<RateLimiter> = OnceLock::new();
 
@@ -14,7 +15,7 @@ pub(crate) fn get_rate_limiter() -> &'static RateLimiter {
 
 pub async fn search(
     client: &wreq::Client,
-    name: Option<&str>,
+    name: &str,
     offset: Option<usize>,
     category: Option<usize>,
     sub_category: Option<usize>,
@@ -23,6 +24,18 @@ pub async fn search(
     ban_words: Option<Vec<String>>,
     quote_search: bool,
 ) -> Result<Vec<Torrent>, Box<dyn std::error::Error>> {
+    let name = match quote_search {
+        true if !name.is_empty() => {
+            let decoded = decode(name).unwrap_or(std::borrow::Cow::Borrowed(name));
+            decoded
+                .split(|c| c == '+' || c == ' ')
+                .filter(|w| !w.is_empty())
+                .map(|w| format!("\"{}\"", w))
+                .collect::<Vec<_>>()
+                .join(" ")
+        }
+        _ => name.to_owned(),
+    };
     debug!(
         "Searching for torrents (name: {:?}, offset: {:?}, category: {:?}, sub_category: {:?}, sort: {:?}, order: {:?})",
         name, offset, category, sub_category, sort, order
@@ -30,15 +43,7 @@ pub async fn search(
 
     let _guard = get_rate_limiter().acquire().await;
 
-    let url = build_query_url(
-        name,
-        offset,
-        category,
-        sub_category,
-        sort,
-        order,
-        quote_search,
-    )?;
+    let url = build_query_url(name.as_str(), offset, category, sub_category, sort, order)?;
     let start = std::time::Instant::now();
     let response = client.get(&url).send().await?;
 
@@ -136,30 +141,19 @@ impl FromStr for Order {
 }
 
 fn build_query_url(
-    name: Option<&str>,
+    name: &str,
     offset: Option<usize>,
     category: Option<usize>,
     sub_category: Option<usize>,
     sort: Option<Sort>,
     order: Option<Order>,
-    quote_search: bool,
 ) -> Result<String, Box<dyn std::error::Error>> {
     let domain_lock = DOMAIN.lock()?;
     let cloned_guard = domain_lock.clone();
     let domain = cloned_guard.as_str();
     drop(domain_lock);
 
-    let name = if quote_search {
-        name.unwrap_or("")
-            .split_whitespace()
-            .map(|w| format!("\"{}\"", w))
-            .collect::<Vec<_>>()
-            .join(" ")
-    } else {
-        name.unwrap_or("").to_string()
-    };
-
-    let mut url = format!("https://{domain}/engine/search?name={name}");
+    let mut url = format!("https://{domain}/engine/search?name={}", encode(&name));
     if let Some(offset) = offset {
         url.push_str(&format!("&page={offset}"));
     }
@@ -228,13 +222,12 @@ mod tests {
         drop(domain_lock);
 
         let url = build_query_url(
-            Some("Vaiana"),
+            "Vaiana",
             None,
             None,
             None,
             Some(Sort::Name),
             Some(Order::Ascending),
-            false,
         )
         .unwrap();
         println!("URL: {}", url);
