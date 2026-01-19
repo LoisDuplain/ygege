@@ -65,7 +65,23 @@ pub async fn download_torrent(
 
     if !response.status().is_success() {
         if response.status() == 302 {
-            warn!("Probably limit reached");
+            return match crate::utils::get_remaining_downloads(&data.client).await {
+                Ok(0) => {
+                    error!("No remaining downloads");
+                    Err("No remaining downloads".into())
+                }
+                Ok(n) => {
+                    warn!(
+                        "Failed to download torrent, but you have {} remaining downloads, might be caused by an insufficient ratio.",
+                        n
+                    );
+                    Err("Failed to download torrent, but you have remaining downloads.".into())
+                }
+                Err(e) => {
+                    error!("Error while checking remaining downloads: {}", e);
+                    Err("Failed to download torrent and check remaining downloads.".into())
+                }
+            };
         }
         return Err(format!(
             "Failed to get torrent file: {} {}",

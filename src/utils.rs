@@ -39,7 +39,12 @@ pub async fn get_remaining_downloads(
         return Err("Session expired".into());
     }
 
-    let document = scraper::Html::parse_document(&response.text().await?);
+    let body = response.text().await?;
+    if body.contains("Limite atteinte") {
+        return Ok(0);
+    }
+
+    let document = scraper::Html::parse_document(&body);
 
     let selector = scraper::Selector::parse("small[style=\"color: #888;\"]")
         .map_err(|_| "Invalid CSS selector")?;
