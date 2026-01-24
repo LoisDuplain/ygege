@@ -8,6 +8,8 @@
 
 High-performance indexer for YGG Torrent written in Rust
 
+## [LEGAL DISCLAIMER](DISCLAIMER.md)
+
 **Key Features**:
 - Automatic resolution of the current YGG Torrent domain
 - Automated Cloudflare bypass (no manual challenge solving)
