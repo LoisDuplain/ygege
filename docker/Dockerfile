@@ -55,6 +55,9 @@ FROM debian:bookworm-slim
 
 # Arguments for runtime stage
 ARG TARGETARCH
+ARG BUILD_COMMIT=unknown
+ARG BUILD_DATE=unknown
+ARG BUILD_BRANCH=unknown
 
 # Install runtime dependencies
 RUN apt-get update && apt-get install -y \
@@ -84,12 +87,6 @@ RUN addgroup --gid 10001 --system ygege \
     && chown -R ygege:ygege /app /home/ygege
 
 VOLUME ["/app/sessions"]
-
-# Metadata
-LABEL "org.opencontainers.image.source"="https://github.com/uwudev/ygege"
-LABEL "org.opencontainers.image.title"="Ygégé"
-LABEL "org.opencontainers.image.description"="High-performance indexer for YGG Torrent written in Rust"
-LABEL "org.opencontainers.image.documentation"="https://github.com/uwudev/ygege/wiki"
 
 # Set HOME and switch to non-root user
 ENV HOME=/home/ygege

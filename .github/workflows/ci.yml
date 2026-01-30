@@ -331,6 +331,12 @@ jobs:
           docker pull rust:1.91-slim-trixie || true
           docker pull debian:bookworm-slim || true
 
+      - name: Extract version from Cargo.toml
+        id: version
+        run: |
+          VERSION=$(grep '^version =' Cargo.toml | head -1 | cut -d '"' -f2)
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+
       - name: Determine Docker tags
         id: tags
         run: |
@@ -338,7 +344,7 @@ jobs:
           if [[ "${{ github.ref_name }}" == "develop" ]]; then
             TAGS="type=raw,value=develop"$'\n'"type=sha,prefix=sha-"
           elif [[ "${{ github.ref_name }}" == "master" ]]; then
-            VERSION=$(grep '^version =' Cargo.toml | head -1 | cut -d '"' -f2)
+            VERSION="${{ steps.version.outputs.version }}"
             TAGS="type=raw,value=master"$'\n'"type=raw,value=latest"$'\n'"type=raw,value=stable"$'\n'"type=raw,value=$VERSION"$'\n'"type=sha,prefix=sha-"
           fi
           echo "tags<<EOF" >> $GITHUB_OUTPUT
@@ -356,9 +362,10 @@ jobs:
           labels: |
             org.opencontainers.image.title=Ygégé
             org.opencontainers.image.description=High-performance indexer for YGG Torrent written in Rust
-            org.opencontainers.image.source=https://github.com/${{ github.repository }}
-            org.opencontainers.image.revision=${{ github.sha }}
-            org.opencontainers.image.created=${{ github.event.head_commit.timestamp }}
+            org.opencontainers.image.url=https://ygege.lila.ws
+            org.opencontainers.image.documentation=https://ygege.lila.ws
+            org.opencontainers.image.licenses=MIT
+            org.opencontainers.image.vendor=UwUDev
 
       - name: Build and push by digest
         id: build
@@ -368,6 +375,7 @@ jobs:
           file: ./docker/Dockerfile
           platforms: ${{ matrix.platform }}
           push: true
+          labels: ${{ steps.meta.outputs.labels }}
           build-args: |
             BUILD_COMMIT=${{ github.sha }}
             BUILD_DATE=${{ github.event.head_commit.timestamp }}
