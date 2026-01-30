@@ -117,6 +117,47 @@ curl http://localhost:8715/health
 
 You should receive an `OK` response.
 
+## Security
+
+### Non-root User
+
+The Ygégé Docker image runs by default with a non-root user (UID 10001) for security reasons. This ensures:
+
+- ✅ Compatibility with Docker and Kubernetes security policies
+- ✅ Protection against privilege escalation
+- ✅ Compliance with container security best practices
+
+### Running with a Custom UID
+
+If you want to run the container with a specific UID/GID (for example to match your host user):
+
+```bash
+docker run -d \
+  --name ygege \
+  --user 1000:1000 \
+  -p 8715:8715 \
+  -v ./config:/app/sessions \
+  -v ./config.json:/app/config.json \
+  uwucode/ygege:latest
+```
+
+Or with Docker Compose:
+
+```yaml
+services:
+  ygege:
+    image: uwucode/ygege:latest
+    user: "1000:1000"  # Your UID:GID
+    # ... rest of configuration
+```
+
+:::tip
+Make sure mounted volumes have appropriate permissions for the specified user:
+```bash
+sudo chown -R 1000:1000 ./config ./sessions
+```
+:::
+
 ## Next Steps
 
 - [Advanced Configuration](../configuration)

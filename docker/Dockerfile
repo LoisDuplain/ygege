@@ -73,6 +73,16 @@ RUN chmod +x /app/ygege
 
 # Create necessary directories
 RUN mkdir -p /app/sessions
+
+# Create non-root user with specific UID/GID for better compatibility
+# Using UID/GID 10001 to avoid conflicts with host systems
+# --no-log-init: Prevents large UID values from causing issues
+# --system: Creates a system user without password
+# --shell /sbin/nologin: Prevents login shell access for security
+RUN addgroup --gid 10001 --system ygege \
+    && adduser --uid 10001 --system --ingroup ygege --home /home/ygege --shell /sbin/nologin ygege \
+    && chown -R ygege:ygege /app /home/ygege
+
 VOLUME ["/app/sessions"]
 
 # Metadata
@@ -80,5 +90,9 @@ LABEL "org.opencontainers.image.source"="https://github.com/uwudev/ygege"
 LABEL "org.opencontainers.image.title"="Ygégé"
 LABEL "org.opencontainers.image.description"="High-performance indexer for YGG Torrent written in Rust"
 LABEL "org.opencontainers.image.documentation"="https://github.com/uwudev/ygege/wiki"
+
+# Set HOME and switch to non-root user
+ENV HOME=/home/ygege
+USER ygege
 
 ENTRYPOINT ["/app/ygege"]

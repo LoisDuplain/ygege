@@ -2,7 +2,9 @@ services:
   ygege:
     image: uwucode/ygege:latest
     container_name: ygege
-    restart: unless-stopped 
+    restart: unless-stopped
+    # Optional: Run with specific user ID (already runs as non-root UID 10001 by default)
+    # user: "1000:1000"
     volumes:
       - ./ygege/sessions:/app/sessions
       - ./ygege/config.json:/app/config.json
