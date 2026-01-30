@@ -84,8 +84,9 @@ The following variables are supported:
 | `YGG_PASSWORD` | YGG password | - |
 | `BIND_IP` | Listening IP address | `0.0.0.0` |
 | `BIND_PORT` | Listening port | `8715` |
-| `LOG_LEVEL` | Log level (trace, debug, info, warn, error) | `info` |
-
+| `LOG_LEVEL` | Log level (trace, debug, info, warn, error) | `info` || `TMDB_TOKEN` | TMDB API token (optional) | - |
+| `YGG_DOMAIN` | Custom YGG domain (optional) | - |
+| `TURBO_ENABLED` | Enable turbo mode (true/false) | `false` |
 ## Available Docker Tags
 
 | Tag | Description |

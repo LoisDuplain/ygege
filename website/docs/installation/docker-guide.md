@@ -85,6 +85,9 @@ Les variables suivantes sont supportées:
 | `BIND_IP` | Adresse IP d'écoute | `0.0.0.0` |
 | `BIND_PORT` | Port d'écoute | `8715` |
 | `LOG_LEVEL` | Niveau de log (trace, debug, info, warn, error) | `info` |
+| `TMDB_TOKEN` | Token API TMDB (optionnel) | - |
+| `YGG_DOMAIN` | Domaine YGG personnalisé (optionnel) | - |
+| `TURBO_ENABLED` | Activer le mode turbo (true/false) | `false` |
 
 ## Tags Docker disponibles
 
