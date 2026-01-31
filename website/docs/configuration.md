@@ -46,6 +46,17 @@ YGG Torrent est un tracker privé. Des identifiants valides sont **obligatoires*
 | `bind_ip` | string | `0.0.0.0` | Adresse IP d'écoute |
 | `bind_port` | number | `8715` | Port d'écoute du serveur |
 
+:::tip Personnaliser le port
+Pour éviter les conflits de ports (ex: sur Windows), changez simplement `BIND_PORT` :
+```yaml
+environment:
+  BIND_PORT: "3000"  # Utilise le port 3000 au lieu de 8715
+ports:
+  - "3000:3000"
+```
+Le healthcheck s'adapte automatiquement grâce à `$${BIND_PORT:-8715}`.
+:::
+
 ### Logging
 
 | Paramètre | Type | Défaut | Description |

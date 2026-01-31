@@ -46,6 +46,17 @@ Without valid credentials, you will be **rate-limited** by YGG and the service w
 | `bind_ip` | string | `0.0.0.0` | Listening IP address |
 | `bind_port` | number | `8715` | Server listening port |
 
+:::tip Custom Port
+To avoid port conflicts (e.g., on Windows), simply change `BIND_PORT`:
+```yaml
+environment:
+  BIND_PORT: "3000"  # Use port 3000 instead of 8715
+ports:
+  - "3000:3000"
+```
+The healthcheck automatically adapts using `$${BIND_PORT:-8715}`.
+:::
+
 ### Logging
 
 | Parameter | Type | Default | Description |
