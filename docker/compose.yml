@@ -15,13 +15,17 @@ services:
       # YGG_DOMAIN: "https://www.ygg.re"       # Optional: YGG domain
       # TURBO_ENABLED: "true"                  # Optional: Enable turbo mode
     volumes:
-      - ./ygege/sessions:/app/sessions
-      - ./ygege/config.json:/app/config.json  # Or use environment variables above
+      - ygege:/app/sessions           # Use named volume for proper permissions
+      - ./ygege/config.json:/app/config.json:ro # Optional: read-only config file
     ports:
-      - "8715:8715"                           # Change CONTAINER_PORT to match BIND_PORT env var
+      - "8715:8715"                            # Change CONTAINER_PORT to match BIND_PORT env var
     healthcheck:
       test: ["CMD-SHELL", "curl --fail http://localhost:$${BIND_PORT:-8715}/health || exit 1"]
       interval: 1m30s
       timeout: 20s
       retries: 3
       start_period: 10s
+
+volumes:
+  ygege:
+    driver: local

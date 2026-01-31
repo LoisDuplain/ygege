@@ -32,6 +32,10 @@ High-performance indexer for YGG Torrent written in Rust
 
 A ready-to-use Docker image is available for Ygégé.
 To get started with Docker deployment and configuration, see the [dedicated Docker guide](https://ygege.lila.ws/en/installation/docker-guide).
+
+> [!IMPORTANT]
+> If you encounter a `Permission denied` error after updating, see the [Permission Management](https://ygege.lila.ws/en/installation/docker-guide#permission-management) section in the Docker guide.
+
 ## Docker
 
 To create a custom Docker image with your own optimizations, refer to the [Docker build guide](https://ygege.lila.ws/en/installation/docker-guide).

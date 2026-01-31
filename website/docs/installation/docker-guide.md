@@ -39,17 +39,21 @@ services:
     ports:
       - "8715:8715"
     volumes:
-      - ./config:/config
+      - ygege_sessions:/app/sessions           # Volume nommé (recommandé)
     environment:
       YGG_USERNAME: "votre_nom_utilisateur"
       YGG_PASSWORD: "votre_mot_de_passe"
       LOG_LEVEL: "debug"
     healthcheck:
-      test: ["CMD-SHELL", "curl --fail http://localhost:8715/health || exit 1"]
+      test: ["CMD-SHELL", "curl --fail http://localhost:$${BIND_PORT:-8715}/health || exit 1"]
       interval: 1m30s
       timeout: 20s
       retries: 3
       start_period: 10s
+
+volumes:
+  ygege_sessions:
+    driver: local
 ```
 
 Puis démarrez le service:
@@ -130,6 +134,43 @@ L'image Docker Ygégé s'exécute par défaut avec un utilisateur non-root (UID 
 - ✅ Protection contre les escalades de privilèges
 - ✅ Conformité aux meilleures pratiques de sécurité des conteneurs
 
+### Gestion des permissions
+
+:::warning Erreur "Permission denied"
+Si vous obtenez `Error: Os { code: 13, kind: PermissionDenied }` après mise à jour, c'est lié aux permissions des volumes.
+:::
+
+**Solution recommandée**: Utilisez des **volumes nommés** (déjà dans l'exemple ci-dessus):
+
+```yaml
+volumes:
+  - ygege_sessions:/app/sessions  # Gestion automatique des permissions
+```
+
+**Alternative avec bind mounts**: Si vous devez monter un dossier local:
+
+```yaml
+services:
+  ygege:
+    image: uwucode/ygege:latest
+    user: "10001:10001"  # UID/GID du container
+    volumes:
+      - ./ygege/sessions:/app/sessions
+```
+
+Puis définissez les permissions:
+
+**Linux/macOS**:
+```bash
+sudo chown -R 10001:10001 ./ygege/sessions
+sudo chmod -R 755 ./ygege/sessions
+```
+
+**Windows** (PowerShell en administrateur):
+```powershell
+icacls ".\ygege\sessions" /grant Everyone:(OI)(CI)F /T
+```
+
 ### Exécution avec un UID personnalisé
 
 Si vous souhaitez exécuter le conteneur avec un UID/GID spécifique (par exemple pour correspondre à votre utilisateur hôte):
@@ -160,6 +201,45 @@ Assurez-vous que les volumes montés ont les permissions appropriées pour l'uti
 sudo chown -R 1000:1000 ./config ./sessions
 ```
 :::
+
+### Exécution en root (non recommandé)
+
+:::danger Avertissement de sécurité
+L'exécution en root n'est **pas recommandée** et peut présenter des risques de sécurité. Utilisez cette option uniquement si vous comprenez les implications.
+:::
+
+Si vous devez absolument exécuter le conteneur en root:
+
+**Docker Run**:
+```bash
+docker run -d \
+  --name ygege \
+  --user 0:0 \
+  -p 8715:8715 \
+  -v ./ygege/sessions:/app/sessions \
+  -e YGG_USERNAME="votre_nom" \
+  -e YGG_PASSWORD="votre_mdp" \
+  uwucode/ygege:latest
+```
+
+**Docker Compose**:
+```yaml
+services:
+  ygege:
+    image: uwucode/ygege:latest
+    container_name: ygege
+    user: "0:0"  # Root
+    restart: unless-stopped
+    environment:
+      YGG_USERNAME: "votre_nom_utilisateur"
+      YGG_PASSWORD: "votre_mot_de_passe"
+    volumes:
+      - ./ygege/sessions:/app/sessions
+    ports:
+      - "8715:8715"
+```
+
+Avec cette configuration, vous n'aurez plus de problèmes de permissions, mais vous perdez les avantages de sécurité du mode non-root.
 
 ## Prochaines étapes
 

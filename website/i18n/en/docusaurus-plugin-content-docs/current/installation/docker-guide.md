@@ -39,17 +39,21 @@ services:
     ports:
       - "8715:8715"
     volumes:
-      - ./config:/config
+      - ygege_sessions:/app/sessions           # Named volume (recommended)
     environment:
       YGG_USERNAME: "your_username"
       YGG_PASSWORD: "your_password"
       LOG_LEVEL: "debug"
     healthcheck:
-      test: ["CMD-SHELL", "curl --fail http://localhost:8715/health || exit 1"]
+      test: ["CMD-SHELL", "curl --fail http://localhost:$${BIND_PORT:-8715}/health || exit 1"]
       interval: 1m30s
       timeout: 20s
       retries: 3
       start_period: 10s
+
+volumes:
+  ygege_sessions:
+    driver: local
 ```
 
 Then start the service:
@@ -128,6 +132,43 @@ The Ygégé Docker image runs by default with a non-root user (UID 10001) for se
 - ✅ Protection against privilege escalation
 - ✅ Compliance with container security best practices
 
+### Permission Management
+
+:::warning "Permission denied" Error
+If you get `Error: Os { code: 13, kind: PermissionDenied }` after updating, it's related to volume permissions.
+:::
+
+**Recommended solution**: Use **named volumes** (already in the example above):
+
+```yaml
+volumes:
+  - ygege_sessions:/app/sessions  # Automatic permission management
+```
+
+**Alternative with bind mounts**: If you need to mount a local folder:
+
+```yaml
+services:
+  ygege:
+    image: uwucode/ygege:latest
+    user: "10001:10001"  # Container UID/GID
+    volumes:
+      - ./ygege/sessions:/app/sessions
+```
+
+Then set permissions:
+
+**Linux/macOS**:
+```bash
+sudo chown -R 10001:10001 ./ygege/sessions
+sudo chmod -R 755 ./ygege/sessions
+```
+
+**Windows** (PowerShell as Administrator):
+```powershell
+icacls ".\ygege\sessions" /grant Everyone:(OI)(CI)F /T
+```
+
 ### Running with a Custom UID
 
 If you want to run the container with a specific UID/GID (for example to match your host user):
@@ -158,6 +199,45 @@ Make sure mounted volumes have appropriate permissions for the specified user:
 sudo chown -R 1000:1000 ./config ./sessions
 ```
 :::
+
+### Running as Root (Not Recommended)
+
+:::danger Security Warning
+Running as root is **not recommended** and may present security risks. Use this option only if you understand the implications.
+:::
+
+If you absolutely need to run the container as root:
+
+**Docker Run**:
+```bash
+docker run -d \
+  --name ygege \
+  --user 0:0 \
+  -p 8715:8715 \
+  -v ./ygege/sessions:/app/sessions \
+  -e YGG_USERNAME="your_username" \
+  -e YGG_PASSWORD="your_password" \
+  uwucode/ygege:latest
+```
+
+**Docker Compose**:
+```yaml
+services:
+  ygege:
+    image: uwucode/ygege:latest
+    container_name: ygege
+    user: "0:0"  # Root
+    restart: unless-stopped
+    environment:
+      YGG_USERNAME: "your_username"
+      YGG_PASSWORD: "your_password"
+    volumes:
+      - ./ygege/sessions:/app/sessions
+    ports:
+      - "8715:8715"
+```
+
+With this configuration, you won't have permission issues, but you lose the security benefits of non-root mode.
 
 ## Next Steps
 
