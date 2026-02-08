@@ -7,7 +7,7 @@
       "dependencies": {
         "@docusaurus/core": "3.9.2",
         "@docusaurus/preset-classic": "3.9.2",
-        "@easyops-cn/docusaurus-search-local": "^0.53.0",
+        "@easyops-cn/docusaurus-search-local": "^0.54.0",
         "@mdx-js/react": "^3.1.1",
         "clsx": "^2.1.1",
         "prism-react-renderer": "^2.4.1",
@@ -435,7 +435,7 @@
 
     "@easyops-cn/autocomplete.js": ["@easyops-cn/autocomplete.js@0.38.1", "", { "dependencies": { "cssesc": "^3.0.0", "immediate": "^3.2.3" } }, "sha512-drg76jS6syilOUmVNkyo1c7ZEBPcPuK+aJA7AksM5ZIIbV57DMHCywiCr+uHyv8BE5jUTU98j/H7gVrkHrWW3Q=="],
 
-    "@easyops-cn/docusaurus-search-local": ["@easyops-cn/docusaurus-search-local@0.53.0", "", { "dependencies": { "@docusaurus/plugin-content-docs": "^2 || ^3", "@docusaurus/theme-translations": "^2 || ^3", "@docusaurus/utils": "^2 || ^3", "@docusaurus/utils-common": "^2 || ^3", "@docusaurus/utils-validation": "^2 || ^3", "@easyops-cn/autocomplete.js": "^0.38.1", "@node-rs/jieba": "^1.6.0", "cheerio": "^1.0.0", "clsx": "^2.1.1", "comlink": "^4.4.2", "debug": "^4.2.0", "fs-extra": "^10.0.0", "klaw-sync": "^6.0.0", "lunr": "^2.3.9", "lunr-languages": "^1.4.0", "mark.js": "^8.11.1", "open-ask-ai": "^0.7.3", "tslib": "^2.4.0" }, "peerDependencies": { "@docusaurus/theme-common": "^2 || ^3", "react": "^16.14.0 || ^17 || ^18 || ^19", "react-dom": "^16.14.0 || 17 || ^18 || ^19" } }, "sha512-j6MaVNk3Wlyiwsn+4/5yCTdAWL0zIYf8vReOe3SDSvt7iISReSwQ6m6n3py5ORO2y4TQz+2NGzk1/pE3Cla9xQ=="],
+    "@easyops-cn/docusaurus-search-local": ["@easyops-cn/docusaurus-search-local@0.54.0", "", { "dependencies": { "@docusaurus/plugin-content-docs": "^2 || ^3", "@docusaurus/theme-translations": "^2 || ^3", "@docusaurus/utils": "^2 || ^3", "@docusaurus/utils-common": "^2 || ^3", "@docusaurus/utils-validation": "^2 || ^3", "@easyops-cn/autocomplete.js": "^0.38.1", "@node-rs/jieba": "^1.6.0", "cheerio": "^1.0.0", "clsx": "^2.1.1", "comlink": "^4.4.2", "debug": "^4.2.0", "fs-extra": "^10.0.0", "klaw-sync": "^6.0.0", "lunr": "^2.3.9", "lunr-languages": "^1.4.0", "mark.js": "^8.11.1", "tslib": "^2.4.0" }, "optionalDependencies": { "open-ask-ai": "^0.7.3" }, "peerDependencies": { "@docusaurus/theme-common": "^2 || ^3", "react": "^16.14.0 || ^17 || ^18 || ^19", "react-dom": "^16.14.0 || 17 || ^18 || ^19" } }, "sha512-CHLJ+zEDz+pc+RMAbkQkw3vC0bYUj9n+D3Vvspn7G23S/R9WXdvxXRRutUsdBs2rXwQTWuUdE4wYpv5m36FgMw=="],
 
     "@emnapi/core": ["@emnapi/core@1.7.1", "", { "dependencies": { "@emnapi/wasi-threads": "1.1.0", "tslib": "^2.4.0" } }, "sha512-o1uhUASyo921r2XtHYOHy7gdkGLge8ghBEQHMWmyJFoXlpU58kIrhhN3w26lpQb6dspetweapMn2CSNwQ8I4wg=="],
 
