@@ -61,10 +61,12 @@ pub struct FlareSolverrSolution {
     pub response: String,
     pub cookies: Vec<FlareSolverrCookie>,
     #[serde(rename = "userAgent")]
+    #[allow(dead_code)]
     pub user_agent: String,
 }
 
 #[derive(Debug, Deserialize)]
+#[allow(dead_code)]
 pub struct FlareSolverrCookie {
     pub name: String,
     pub value: String,
@@ -127,10 +129,14 @@ impl FlareSolverr {
                 tokio::time::sleep(std::time::Duration::from_secs(5)).await;
             }
         }
-        Err(last_err.unwrap_or_else(|| "FlareSolverr sessions.create failed after 3 attempts".into()))
+        Err(last_err
+            .unwrap_or_else(|| "FlareSolverr sessions.create failed after 3 attempts".into()))
     }
 
-    pub async fn destroy_session(&self, session_id: &str) -> Result<(), Box<dyn std::error::Error>> {
+    pub async fn destroy_session(
+        &self,
+        session_id: &str,
+    ) -> Result<(), Box<dyn std::error::Error>> {
         let request_body = FlareSolverrSessionRequest {
             cmd: "sessions.destroy".to_string(),
             session: Some(session_id.to_string()),

@@ -12,14 +12,19 @@ pub async fn get_user_info(
     if let Err(e) = &user {
         if e.to_string().contains("Session expired") && !data.is_custom {
             info!("Trying to renew session...");
-            let new_client =
-                crate::auth::login(config.username.as_str(), config.password.as_str(), true, config.flaresolverr_url.as_deref())
-                    .await?;
+            let new_client = crate::auth::login(
+                config.username.as_str(),
+                config.password.as_str(),
+                true,
+                config.flaresolverr_url.as_deref(),
+            )
+            .await?;
 
             // Transfer cookies only in Direct mode
-            if let (Some(new_wreq), Some(shared_wreq)) =
-                (new_client.as_wreq_client(), data.shared_client.as_wreq_client())
-            {
+            if let (Some(new_wreq), Some(shared_wreq)) = (
+                new_client.as_wreq_client(),
+                data.shared_client.as_wreq_client(),
+            ) {
                 let domain = crate::DOMAIN.lock()?;
                 let url = wreq::Url::parse(&format!("https://{}/", domain))?;
                 if let Some(cookies) = new_wreq.get_cookies(&url) {
@@ -33,12 +38,13 @@ pub async fn get_user_info(
                         if parts.len() != 2 {
                             continue;
                         }
-                        let cookie = wreq::cookie::CookieBuilder::new(parts[0].trim(), parts[1].trim())
-                            .domain(domain.as_str())
-                            .path("/")
-                            .http_only(true)
-                            .secure(true)
-                            .build();
+                        let cookie =
+                            wreq::cookie::CookieBuilder::new(parts[0].trim(), parts[1].trim())
+                                .domain(domain.as_str())
+                                .path("/")
+                                .http_only(true)
+                                .secure(true)
+                                .build();
                         shared_wreq.set_cookie(&url, cookie);
                     }
                 }

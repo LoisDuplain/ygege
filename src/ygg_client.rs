@@ -101,10 +101,7 @@ impl YggClient {
         }
     }
 
-    pub async fn get_bytes(
-        &self,
-        url: &str,
-    ) -> Result<(u16, Vec<u8>), Box<dyn std::error::Error>> {
+    pub async fn get_bytes(&self, url: &str) -> Result<(u16, Vec<u8>), Box<dyn std::error::Error>> {
         match self {
             YggClient::Direct(client) => {
                 let response = client.get(url).send().await?;

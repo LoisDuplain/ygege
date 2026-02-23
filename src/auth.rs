@@ -129,11 +129,7 @@ async fn login_via_flaresolverr(
 
     // GET root page to finalize session
     flaresolverr
-        .get(
-            &format!("https://{}/", domain),
-            session_ref,
-            None,
-        )
+        .get(&format!("https://{}/", domain), session_ref, None)
         .await?;
 
     let stop = std::time::Instant::now();
