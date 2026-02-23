@@ -25,25 +25,16 @@ pub async fn download_torrent(
 
     debug!("Request download token {} {}", url, body);
 
-    let response = data
-        .client
-        .post(&url)
-        .body(body)
-        .header(
-            "Content-Type",
-            "application/x-www-form-urlencoded; charset=UTF-8",
-        )
-        .send()
-        .await?;
+    let response = data.client.post_form(&url, &body).await?;
 
-    if !response.status().is_success() {
-        return Err(format!("Failed to get token: {}", response.status()).into());
+    if !(200..300).contains(&response.status) {
+        return Err(format!("Failed to get token: {}", response.status).into());
     }
 
-    let body: Value = response.json().await?;
-    debug!("Response {}", body);
+    let json: Value = serde_json::from_str(&response.body)?;
+    debug!("Response {}", json);
 
-    let token = body
+    let token = json
         .get("token")
         .and_then(|h| h.as_str())
         .ok_or("Token not found in start_download_timer response")?;
@@ -61,10 +52,10 @@ pub async fn download_torrent(
     );
     debug!("download URL {}", url);
 
-    let response = data.client.get(&url).send().await?;
+    let (status, bytes) = data.client.get_bytes(&url).await?;
 
-    if !response.status().is_success() {
-        if response.status() == 302 {
+    if !(200..300).contains(&status) {
+        if status == 302 {
             return match crate::utils::get_remaining_downloads(&data.client).await {
                 Ok(0) => {
                     error!("No remaining downloads");
@@ -85,13 +76,11 @@ pub async fn download_torrent(
         }
         return Err(format!(
             "Failed to get torrent file: {} {}",
-            response.status(),
-            response.text().await?
+            status,
+            String::from_utf8_lossy(&bytes)
         )
         .into());
     }
-
-    let body = response.bytes().await?;
 
     let mut response_builder = HttpResponse::Ok();
     response_builder
@@ -105,5 +94,5 @@ pub async fn download_torrent(
         response_builder.insert_header(("X-Session-Cookies", cookies));
     }
 
-    Ok(response_builder.body(body))
+    Ok(response_builder.body(bytes))
 }
