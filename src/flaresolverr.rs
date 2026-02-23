@@ -61,10 +61,12 @@ pub struct FlareSolverrSolution {
     pub response: String,
     pub cookies: Vec<FlareSolverrCookie>,
     #[serde(rename = "userAgent")]
+    #[allow(dead_code)]
     pub user_agent: String,
 }
 
 #[derive(Debug, Deserialize)]
+#[allow(dead_code)]
 pub struct FlareSolverrCookie {
     pub name: String,
     pub value: String,
