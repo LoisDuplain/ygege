@@ -282,7 +282,7 @@ jobs:
 
   docker:
     name: Build & Push Docker Images (${{ matrix.platform }})
-    if: github.event_name == 'push' && (github.ref == 'refs/heads/develop' || github.ref == 'refs/heads/master')
+    if: github.event_name != 'pull_request' && (github.ref == 'refs/heads/develop' || github.ref == 'refs/heads/master')
     needs: [lint]
     strategy:
       matrix:
@@ -395,7 +395,7 @@ jobs:
 
   docker-noupx:
     name: Build & Push Docker Images - NoUPX (${{ matrix.platform }})
-    if: github.event_name == 'push' && (github.ref == 'refs/heads/develop' || github.ref == 'refs/heads/master')
+    if: github.event_name != 'pull_request' && (github.ref == 'refs/heads/develop' || github.ref == 'refs/heads/master')
     needs: [lint]
     strategy:
       matrix:
@@ -471,7 +471,7 @@ jobs:
 
   merge_manifest:
     name: Create Multi-arch Manifest
-    if: github.event_name == 'push' && (github.ref == 'refs/heads/develop' || github.ref == 'refs/heads/master')
+    if: github.event_name != 'pull_request' && (github.ref == 'refs/heads/develop' || github.ref == 'refs/heads/master')
     needs: [docker]
     runs-on: ubuntu-24.04
     steps:
@@ -528,7 +528,7 @@ jobs:
 
   merge_manifest_noupx:
     name: Create Multi-arch Manifest (NoUPX)
-    if: github.event_name == 'push' && (github.ref == 'refs/heads/develop' || github.ref == 'refs/heads/master')
+    if: github.event_name != 'pull_request' && (github.ref == 'refs/heads/develop' || github.ref == 'refs/heads/master')
     needs: [docker-noupx]
     runs-on: ubuntu-24.04
     steps:
@@ -585,7 +585,7 @@ jobs:
 
   publish-fork:
     name: Publish to lduplain/ygege
-    if: github.event_name == 'push' && (github.ref == 'refs/heads/develop' || github.ref == 'refs/heads/master')
+    if: github.event_name != 'pull_request' && (github.ref == 'refs/heads/develop' || github.ref == 'refs/heads/master')
     needs: [merge_manifest, merge_manifest_noupx]
     runs-on: ubuntu-24.04
     steps:
