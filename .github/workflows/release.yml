@@ -767,6 +767,52 @@ jobs:
             --certificate-identity "https://github.com/${{ github.workflow_ref }}" \
             --certificate-oidc-issuer "https://token.actions.githubusercontent.com"
 
+  publish-fork:
+    name: Publish to lduplain/ygege
+    needs: [publish, merge_manifest_noupx]
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: read
+    env:
+      VERSION: ${{ github.ref_name }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          persist-credentials: false
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@8d2750c68a42422c14e847fe6c8ac0403b4cbd6f # v3.12.0
+
+      - name: Log in to Docker Hub
+        uses: docker/login-action@c94ce9fb468520275223c153574b00df6fe4bcc9 # v3.7.0
+        with:
+          username: ${{ secrets.DOCKERHUB_FORK_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_FORK_TOKEN }}
+
+      - name: Copy images to lduplain/ygege
+        env:
+          VERSION_REF: ${{ github.ref_name }}
+        run: |
+          VERSION_NUM="${VERSION_REF#v}"
+
+          if [[ "$VERSION_REF" =~ ^v?[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            MAJOR=$(echo "$VERSION_NUM" | cut -d. -f1)
+            MINOR=$(echo "$VERSION_NUM" | cut -d. -f1-2)
+            TAGS="$VERSION_NUM $MINOR $MAJOR stable latest"
+            NOUPX_TAGS="${VERSION_NUM}-noupx ${MINOR}-noupx ${MAJOR}-noupx stable-noupx noupx"
+          else
+            TAGS="$VERSION_NUM"
+            NOUPX_TAGS="${VERSION_NUM}-noupx"
+          fi
+
+          for TAG in $TAGS $NOUPX_TAGS; do
+            echo "Copying uwucode/ygege:$TAG -> lduplain/ygege:$TAG"
+            docker buildx imagetools create \
+              --tag lduplain/ygege:$TAG \
+              uwucode/ygege:$TAG
+          done
+
   publish-release:
     name: Publish release
     needs: [linux, windows, macos, publish, merge_manifest_noupx, verify]
