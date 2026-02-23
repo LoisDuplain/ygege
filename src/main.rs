@@ -123,7 +123,13 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     drop(domain_lock);
 
     std::fs::create_dir_all("sessions")?;
-    let client = login(config.username.as_str(), config.password.as_str(), true, config.flaresolverr_url.as_deref()).await?;
+    let client = login(
+        config.username.as_str(),
+        config.password.as_str(),
+        true,
+        config.flaresolverr_url.as_deref(),
+    )
+    .await?;
     info!("Logged in to YGG with username: {}", config.username);
 
     let account = user::get_account(&client).await?;

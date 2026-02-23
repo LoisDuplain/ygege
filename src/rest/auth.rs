@@ -4,7 +4,10 @@ use crate::config::Config;
 use actix_web::{HttpRequest, HttpResponse, get, web};
 
 #[get("/auth")]
-pub async fn auth(req_data: HttpRequest, config: web::Data<Config>) -> Result<HttpResponse, Box<dyn std::error::Error>> {
+pub async fn auth(
+    req_data: HttpRequest,
+    config: web::Data<Config>,
+) -> Result<HttpResponse, Box<dyn std::error::Error>> {
     let query = req_data.query_string();
     let qs = qstring::QString::from(query);
     let user: String = match qs.get("user") {
