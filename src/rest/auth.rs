@@ -1,9 +1,10 @@
 use crate::DOMAIN;
 use crate::auth::login;
-use actix_web::{HttpRequest, HttpResponse, get};
+use crate::config::Config;
+use actix_web::{HttpRequest, HttpResponse, get, web};
 
 #[get("/auth")]
-pub async fn auth(req_data: HttpRequest) -> Result<HttpResponse, Box<dyn std::error::Error>> {
+pub async fn auth(req_data: HttpRequest, config: web::Data<Config>) -> Result<HttpResponse, Box<dyn std::error::Error>> {
     let query = req_data.query_string();
     let qs = qstring::QString::from(query);
     let user: String = match qs.get("user") {
@@ -19,25 +20,31 @@ pub async fn auth(req_data: HttpRequest) -> Result<HttpResponse, Box<dyn std::er
         }
     };
 
-    let client = login(&user, &pass, false).await;
+    let client = login(&user, &pass, false, config.flaresolverr_url.as_deref()).await;
     match client {
-        Ok(client) => {
-            let domain_lock = DOMAIN.lock()?;
-            let cloned_guard = domain_lock.clone();
-            let domain = cloned_guard.as_str();
-            drop(domain_lock);
+        Ok(ygg_client) => {
+            if let Some(wreq_client) = ygg_client.as_wreq_client() {
+                let domain_lock = DOMAIN.lock()?;
+                let cloned_guard = domain_lock.clone();
+                let domain = cloned_guard.as_str();
+                drop(domain_lock);
 
-            let url = wreq::Url::parse(&format!("https://{}/", domain)).unwrap();
-            let cookies = client.get_cookies(&url);
-            match cookies {
-                Some(cookies_header) => {
-                    let cookie_str = cookies_header.to_str().unwrap_or("").to_string();
-                    info!("Login successful for user {}: cookies={}", user, cookie_str);
-                    let mut response = HttpResponse::Ok();
-                    response.insert_header(("X-Session-Cookies", cookie_str.clone()));
-                    Ok(response.body(cookie_str))
+                let url = wreq::Url::parse(&format!("https://{}/", domain)).unwrap();
+                let cookies = wreq_client.get_cookies(&url);
+                match cookies {
+                    Some(cookies_header) => {
+                        let cookie_str = cookies_header.to_str().unwrap_or("").to_string();
+                        info!("Login successful for user {}: cookies={}", user, cookie_str);
+                        let mut response = HttpResponse::Ok();
+                        response.insert_header(("X-Session-Cookies", cookie_str.clone()));
+                        Ok(response.body(cookie_str))
+                    }
+                    None => Ok(HttpResponse::Ok().body("Login successful, but no cookies found")),
                 }
-                None => Ok(HttpResponse::Ok().body("Login successful, but no cookies found")),
+            } else {
+                // FlareSolverr mode - cookies are managed by the session
+                info!("Login successful for user {} (FlareSolverr mode)", user);
+                Ok(HttpResponse::Ok().body("Login successful (FlareSolverr mode)"))
             }
         }
         Err(e) => {

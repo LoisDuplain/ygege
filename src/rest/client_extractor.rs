@@ -1,3 +1,4 @@
+use crate::ygg_client::YggClient;
 use actix_web::{FromRequest, HttpRequest, dev::Payload, web};
 use std::net::{IpAddr, SocketAddr};
 use std::str::FromStr;
@@ -10,10 +11,10 @@ use crate::domain::get_leaked_ip;
 use crate::resolver::AsyncDNSResolverAdapter;
 
 pub struct MaybeCustomClient {
-    pub client: Client,
+    pub client: YggClient,
     pub is_custom: bool,
     pub cookies_header: Option<String>,
-    pub shared_client: web::Data<Client>,
+    pub shared_client: web::Data<YggClient>,
 }
 
 #[derive(Debug, serde::Deserialize)]
@@ -31,7 +32,7 @@ impl FromRequest for MaybeCustomClient {
         Box::pin(async move {
             // Get the shared client from app data
             let shared_client = req
-                .app_data::<web::Data<Client>>()
+                .app_data::<web::Data<YggClient>>()
                 .ok_or_else(|| {
                     actix_web::error::ErrorInternalServerError("Client not found in app data")
                 })?
@@ -42,6 +43,20 @@ impl FromRequest for MaybeCustomClient {
                 .ok()
                 .and_then(|q| q.into_inner().cookie);
 
+            // In FlareSolverr (Proxied) mode, always use the shared client
+            if matches!(shared_client.get_ref(), YggClient::Proxied { .. }) {
+                if query.is_some() {
+                    warn!("Custom cookies ignored in FlareSolverr mode");
+                }
+                return Ok(MaybeCustomClient {
+                    client: shared_client.get_ref().clone(),
+                    is_custom: false,
+                    cookies_header: None,
+                    shared_client,
+                });
+            }
+
+            // Direct mode
             if let Some(cookie_string) = query {
                 // custom client
                 match create_client_with_cookies(&cookie_string).await {
@@ -62,7 +77,7 @@ impl FromRequest for MaybeCustomClient {
                         };
 
                         Ok(MaybeCustomClient {
-                            client,
+                            client: YggClient::Direct(client),
                             is_custom: true,
                             cookies_header,
                             shared_client,

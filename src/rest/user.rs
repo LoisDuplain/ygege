@@ -13,33 +13,37 @@ pub async fn get_user_info(
         if e.to_string().contains("Session expired") && !data.is_custom {
             info!("Trying to renew session...");
             let new_client =
-                crate::auth::login(config.username.as_str(), config.password.as_str(), true)
+                crate::auth::login(config.username.as_str(), config.password.as_str(), true, config.flaresolverr_url.as_deref())
                     .await?;
 
-            // Copy cookies from new client to shared client
-            let domain = crate::DOMAIN.lock()?;
-            let url = wreq::Url::parse(&format!("https://{}/", domain))?;
-            if let Some(cookies) = new_client.get_cookies(&url) {
-                data.shared_client.clear_cookies();
-                for cookie_str in cookies.to_str().unwrap_or("").split(';') {
-                    let cookie_str = cookie_str.trim();
-                    if cookie_str.is_empty() {
-                        continue;
+            // Transfer cookies only in Direct mode
+            if let (Some(new_wreq), Some(shared_wreq)) =
+                (new_client.as_wreq_client(), data.shared_client.as_wreq_client())
+            {
+                let domain = crate::DOMAIN.lock()?;
+                let url = wreq::Url::parse(&format!("https://{}/", domain))?;
+                if let Some(cookies) = new_wreq.get_cookies(&url) {
+                    shared_wreq.clear_cookies();
+                    for cookie_str in cookies.to_str().unwrap_or("").split(';') {
+                        let cookie_str = cookie_str.trim();
+                        if cookie_str.is_empty() {
+                            continue;
+                        }
+                        let parts: Vec<&str> = cookie_str.splitn(2, '=').collect();
+                        if parts.len() != 2 {
+                            continue;
+                        }
+                        let cookie = wreq::cookie::CookieBuilder::new(parts[0].trim(), parts[1].trim())
+                            .domain(domain.as_str())
+                            .path("/")
+                            .http_only(true)
+                            .secure(true)
+                            .build();
+                        shared_wreq.set_cookie(&url, cookie);
                     }
-                    let parts: Vec<&str> = cookie_str.splitn(2, '=').collect();
-                    if parts.len() != 2 {
-                        continue;
-                    }
-                    let cookie = wreq::cookie::CookieBuilder::new(parts[0].trim(), parts[1].trim())
-                        .domain(domain.as_str())
-                        .path("/")
-                        .http_only(true)
-                        .secure(true)
-                        .build();
-                    data.shared_client.set_cookie(&url, cookie);
                 }
+                drop(domain);
             }
-            drop(domain);
 
             info!("Session renewed, retrying to get user info...");
             let user = crate::user::get_account(&new_client).await?;
