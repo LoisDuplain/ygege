@@ -14,7 +14,7 @@
   </details>
 </div>
 
-Indexeur haute performance pour YGG Torrent écrit en Rust 
+Indexeur haute performance pour YGG Torrent écrit en Rust
 
 ## https://discord.gg/rcsgdzNrvJ
 
@@ -28,6 +28,7 @@ Indexeur haute performance pour YGG Torrent écrit en Rust
 -->
 
 **Caractéristiques principales** :
+
 - Résolution automatique du domaine actuel de YGG Torrent
 - Bypass Cloudflare automatisé (sans résolution manuelle)
 - Recherche quasi instantanée
@@ -41,6 +42,7 @@ Indexeur haute performance pour YGG Torrent écrit en Rust
 - Pas de drivers de navigateur
 
 ## Prérequis pour la compilation
+
 - Rust 1.85.0+
 - OpenSSL 3+
 - Toutes les dépendances requises pour la compilation de [wreq](https://crates.io/crates/wreq)
@@ -86,6 +88,7 @@ Ygégé peut être utilisé comme indexeur personnalisé pour Jackett. Pour le m
 Une fois terminé, redémarrez Jackett et accédez aux paramètres des indexeurs. Vous devriez voir Ygégé dans la liste des indexeurs disponibles.
 
 ## Contournement Cloudflare
+
 Pour contourner le défi de Cloudflare, Ygégé n'utilise pas de navigateur ni de services tiers.
 
 Une règle Cloudflare est appliquée sur le site YGG Torrent pour empêcher l'apparition du challenge Cloudflare via le cookie `account_created=true` censé garantir que l'utilisateur a un compte valide et est connecté.
@@ -101,22 +104,24 @@ Je recommande aux curieux [cet article](https://fingerprint.com/blog/what-is-tls
 ## Test de performance
 
 Query pour la recherche:
+
 - Nom: `Vaiana 2`
 - Tri: `seeders`
 - Ordre: `descendant`
 
 |                                     | Nombre de tests | Temps total de tous les tests | Temps moyen par test |
-|-------------------------------------|-----------------|-------------------------------|----------------------|
-| Résolution du domaine actuel de YGG |        25       |           3220,378ms          |      128,81512ms     |
-| Nouvelle connection YGG             |        10       |          4881.71361ms         |     488.1713616ms    |
-| Restoration de session YGG          |        10       |         2064.672142ms         |     206.4672142ms    |
-| Recherche                           |       100       |         17621.045874ms        |    176,21045874ms    |
+| ----------------------------------- | --------------- | ----------------------------- | -------------------- |
+| Résolution du domaine actuel de YGG | 25              | 3220,378ms                    | 128,81512ms          |
+| Nouvelle connection YGG             | 10              | 4881.71361ms                  | 488.1713616ms        |
+| Restoration de session YGG          | 10              | 2064.672142ms                 | 206.4672142ms        |
+| Recherche                           | 100             | 17621.045874ms                | 176,21045874ms       |
 
 # Documentation
 
 ## Documentation utilisateur
 
 La documentation complète est disponible sur [ygege.lila.ws](https://ygege.lila.ws) :
+
 - [Guide de démarrage](https://ygege.lila.ws/getting-started)
 - [Installation](https://ygege.lila.ws/installation/docker-guide)
 - [Configuration](https://ygege.lila.ws/configuration)
@@ -124,9 +129,11 @@ La documentation complète est disponible sur [ygege.lila.ws](https://ygege.lila
 - [Documentation de l'API](https://ygege.lila.ws/api)
 - [FAQ](https://ygege.lila.ws/faq)
 
+
 ## Documentation développeur
 
 Pour contribuer au projet ou comprendre le fonctionnement interne :
+
 - [Guide de contribution](docs/contribution-fr.md)
 - [Pipeline CI/CD](docs/ci_implementation-fr.md)
 - [Workflow de preview des PRs](docs/preview_workflow-fr.md)
