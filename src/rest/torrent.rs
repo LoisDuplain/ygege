@@ -4,6 +4,7 @@ use crate::rest::client_extractor::MaybeCustomClient;
 use actix_web::{HttpRequest, HttpResponse, get, web};
 use serde_json::Value;
 use tokio::time::{Duration, sleep};
+use regex::Regex;
 
 #[get("/torrent/{id:[0-9]+}")]
 pub async fn download_torrent(
@@ -31,7 +32,12 @@ pub async fn download_torrent(
         return Err(format!("Failed to get token: {}", response.status).into());
     }
 
-    let json: Value = serde_json::from_str(&response.body)?;
+    debug!("Response raw {}", response.body);
+
+    let re = Regex::new(r#"\{"token":"[^"]+"\}"#).unwrap();
+    let caps = re.captures(&response.body).unwrap();
+
+    let json: Value = serde_json::from_str(&caps[0])?;
     debug!("Response {}", json);
 
     let token = json
